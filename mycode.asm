@@ -1,96 +1,150 @@
+
 org 100h
+
+org 100h
+
+.data
+    dora_x dw 150           
+    dora_y dw 80            
+    old_x  dw 150           
+    old_y  dw 80            
+
+    size_w dw 34
+    size_h dw 32
 
 .code
 start:
-    ; 1. เข้าสู่ Graphics Mode 13h (320x200 pixels)
     mov ax, 13h
     int 10h
 
-    ; --- STEP 1: วาดส่วนหัว (สีฟ้า - Color 1) ---
-    mov al, 1               ; สีน้ำเงิน/ฟ้า
-    mov cx, 150             ; พิกัด X
-    mov dx, 80              ; พิกัด Y
-    mov si, 30              ; กว้าง
-    mov di, 28              ; สูง
+game_loop:
+
+    mov al, 0               
+    mov cx, old_x
+    sub cx, 2               
+    mov dx, old_y
+    sub dx, 2               
+    mov si, size_w
+    mov di, size_h
     call draw_rect
 
-    ; --- STEP 2: วาดใบหน้าขาว (สีขาว - Color 15) ---
-    mov al, 15              ; สีขาว
-    mov cx, 155             ; ขยับเข้ามาด้านใน
-    mov dx, 88              
-    mov si, 20
+   
+    mov ax, dora_x
+    mov old_x, ax
+    mov ax, dora_y
+    mov old_y, ax
+
+   
+    mov ah, 01h             
+    int 16h
+    jz redraw               
+    
+    mov ah, 00h             
+    int 16h
+    
+    cmp al, 'w'
+    je move_up
+    cmp al, 's'
+    je move_down
+    cmp al, 'a'
+    je move_left
+    cmp al, 'd'
+    je move_right
+    jmp redraw
+
+move_up:    sub dora_y, 5 
+jmp redraw
+move_down:  add dora_y, 5 
+jmp redraw
+move_left:  sub dora_x, 5 
+jmp redraw
+move_right: add dora_x, 5
+
+redraw:
+   
+    call draw_doraemon
+    
+    
+    call fast_delay
+    
+    jmp game_loop           
+
+
+draw_doraemon proc
+    mov al, 1
+    mov cx, dora_x 
+    mov dx, dora_y 
+    mov si, 30 
+    mov di, 28
+    call draw_rect
+
+    mov al, 15
+    mov cx, dora_x
+    add cx, 5
+    mov dx, dora_y 
+    add dx, 8
+    mov si, 20 
     mov di, 18
     call draw_rect
 
-    ; --- STEP 3: วาดดวงตา (สีดำ - Color 0) ---
-    mov al, 0               ; สีดำ
-    ; ตาซ้าย
-    mov cx, 158
-    mov dx, 92
-    mov si, 3 
+    mov al, 0
+    mov cx, dora_x 
+    add cx, 8 
+    mov dx, dora_y 
+    add dx, 12
+    mov si, 3
     mov di, 4 
     call draw_rect
-    ; ตาขวา
-    mov cx, 169 
-    mov dx, 92 
-    mov si, 3 
-    mov di, 4 
+    mov cx, dora_x 
+    add cx, 19 
     call draw_rect
 
-    ; --- STEP 4: วาดจมูก (สีแดง - Color 4) ---
-    mov al, 4               ; สีแดง
-    mov cx, 163 
-    mov dx, 97 
+    mov al, 4
+    mov cx, dora_x 
+    add cx, 13 
+    mov dx, dora_y 
+    add dx, 17
     mov si, 4 
     mov di, 3 
     call draw_rect
-
-    ; --- STEP 5: วาดปาก (เส้นตรงสีดำ - Color 0) ---
-    mov al, 0
-    mov cx, 158             ; X เริ่มต้น
-    mov dx, 103             ; Y
-    mov si, 14              ; ความยาวเส้นปาก
-    call draw_hline
-
-    ; รอการกดปุ่มเพื่อจบโปรแกรม
-    mov ah, 00h
-    int 16h
-    mov ax, 03h             ; กลับเข้าสู่ Text Mode
-    int 10h
     ret
+draw_doraemon endp
 
-; --- ฟังก์ชันวาดสี่เหลี่ยมระบายสี ---
+
 draw_rect proc
-    push cx
+    push cx 
     push dx
-    mov bx, di              ; ใช้ BX คุมความสูง
-row_loop:
+    mov bx, di              
+row_l:
     push cx
-    mov bp, si              ; ใช้ BP คุมความกว้าง
-pixel_loop:
-    mov ah, 0ch             ; เขียนจุดพิกเซล
+    mov bp, si              
+pix_l:
+    mov ah, 0ch             
     int 10h
     inc cx
     dec bp
-    jnz pixel_loop
+    jnz pix_l
     pop cx
     inc dx
     dec bx
-    jnz row_loop
-    pop dx
+    jnz row_l
+    pop dx 
     pop cx
     ret
 draw_rect endp
 
-; --- ฟังก์ชันวาดเส้นตรงแนวนอน ---
-draw_hline proc
-    mov ah, 0ch
-hline_loop:
-    int 10h
-    inc cx
-    dec si
-    jnz hline_loop
+
+fast_delay proc
+    mov cx, 01FFFh         
+d_l:
+    loop d_l
     ret
-draw_hline endp
+fast_delay endp
 
 end start
+
+ret
+
+
+
+
